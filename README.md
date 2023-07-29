@@ -1,6 +1,6 @@
 # Automated Trader
 
-### Overview
+## Overview
 An automated trading bot framework with multiple strategies for forex with Oanda built with [tpqoa](https://github.com/yhilpisch/tpqoa). I will update this repository shortly to include a general framework for backtesting both vectorized and iterative/event-driven implemented strategies. This is in no way an endorsement to engage in live trading and this repository should not be considered as financial advice. You should not run this code with a live Oanda account.
 
 Some of the default strategies include simple momentum/contrarian, simple moving average crossover, exponential moving average crossover, mean reversion (bollinger bands), and MACD. I plan on adding more strategies in the near future.
@@ -9,7 +9,7 @@ Note that the Jupyter files are not required and are actually excluded from the 
 
 Some of the technologies used in making this project include: Python, Pandas, Docker, Jupyter, NumPy, MatPlotLib, SciKit.
 
-### Usage
+## Usage
 Ensure that in your working directory you have the Oanda configuration file `oanda.cfg` filled out with your account/api information. The config file should be filled out as follows:
 ```
 [oanda]
