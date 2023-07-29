@@ -2,8 +2,19 @@ import string
 import numpy as np
 from strategies import ForexTrader
 
+
 class MACD(ForexTrader):
-    def __init__(self, conf_file: string, instrument: string, bar_length: string, units: int, duration: int, EMA_S=20, EMA_L=50, signal_smooth=10):
+    def __init__(
+        self,
+        conf_file: string,
+        instrument: string,
+        bar_length: string,
+        units: int,
+        duration: int,
+        EMA_S=20,
+        EMA_L=50,
+        signal_smooth=10,
+    ):
         self.EMA_S = EMA_S
         self.EMA_L = EMA_L
         self.signal_smooth = signal_smooth

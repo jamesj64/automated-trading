@@ -4,7 +4,16 @@ from strategies import ForexTrader
 
 
 class SMACrossover(ForexTrader.ForexTrader):
-    def __init__(self, conf_file: string, instrument: string, bar_length: string, units: int, duration: int, SMA_S=50, SMA_L=200):
+    def __init__(
+        self,
+        conf_file: string,
+        instrument: string,
+        bar_length: string,
+        units: int,
+        duration: int,
+        SMA_S=50,
+        SMA_L=200,
+    ):
         self.SMA_S = SMA_S
         self.SMA_L = SMA_L
         super().__init__(conf_file, instrument, bar_length, units, duration)

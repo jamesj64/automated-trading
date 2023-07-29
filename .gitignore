@@ -9,3 +9,6 @@ oanda.cfg
 
 #git
 .git
+
+# All __pycache__ directories
+__pycache__/

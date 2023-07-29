@@ -6,7 +6,14 @@ from datetime import datetime, timedelta
 
 
 class ForexTrader(tpqoa):
-    def __init__(self, conf_file, instrument: string, bar_length: string, units: int, duration: int):
+    def __init__(
+        self,
+        conf_file: string,
+        instrument: string,
+        bar_length: string,
+        units: int,
+        duration: int,
+    ):
         super().__init__(conf_file)
         self.instrument = instrument
         self.bar_length = pd.to_timedelta(bar_length)
@@ -22,7 +29,9 @@ class ForexTrader(tpqoa):
 
         self.start_trading()
 
-    def start_trading(self, days=5, max_attempts=None, wait=15, wait_increase=0):  # Error Handling
+    def start_trading(
+        self, days=5, max_attempts=None, wait=15, wait_increase=0
+    ):  # Error Handling
         attempt = 0
         success = False
         while True:
@@ -36,13 +45,15 @@ class ForexTrader(tpqoa):
                 break
             finally:
                 attempt += 1
-                print("Attempt: {}".format(attempt), end='\n')
+                print("Attempt: {}".format(attempt), end="\n")
                 if not success:
                     if max_attempts is not None and attempt >= max_attempts:
                         print("Max Attempts Reached!")
                         try:  # try to terminate session
                             time.sleep(wait)
-                            self.terminate_session(cause="Unexpected Session Stop (too many errors).")
+                            self.terminate_session(
+                                cause="Unexpected Session Stop (too many errors)."
+                            )
                         except Exception as e:
                             print(e, end=" | ")
                             print("Could not terminate session properly!")
@@ -53,21 +64,29 @@ class ForexTrader(tpqoa):
                         wait += wait_increase
                         self.tick_data = pd.DataFrame()
 
-    def terminate_session(self, cause):
+    def terminate_session(self, cause: string):
         self.stop_stream = True
         if self.position != 0:
-            close_order = self.create_order(self.instrument, units=-self.position * self.units,
-                                            suppress=True, ret=True)
+            close_order = self.create_order(
+                self.instrument,
+                units=-self.position * self.units,
+                suppress=True,
+                ret=True,
+            )
             self.report_trade(close_order, "GOING NEUTRAL")
             self.position = 0
         print(cause, end=" | ")
 
     def close_open_position(self):
         if self.position == -1:
-            order = self.create_order(self.instrument, self.units, suppress=True, ret=True)
+            order = self.create_order(
+                self.instrument, self.units, suppress=True, ret=True
+            )
             self.report_trade(order, "GOING NEUTRAL")
         elif self.position == 1:
-            order = self.create_order(self.instrument, -self.units, suppress=True, ret=True)
+            order = self.create_order(
+                self.instrument, -self.units, suppress=True, ret=True
+            )
             self.report_trade(order, "GOING NEUTRAL")
         print("\nSession Over.")
         self.position = 0
@@ -80,13 +99,27 @@ class ForexTrader(tpqoa):
         now = datetime.utcnow()
         now = now - timedelta(microseconds=now.microsecond)
         past = now - timedelta(days=days)
-        df = self.get_history(instrument=self.instrument, start=past, end=now,
-                              granularity="S5", price='M', localize=True).c.dropna().to_frame()
+        df = (
+            self.get_history(
+                instrument=self.instrument,
+                start=past,
+                end=now,
+                granularity="S5",
+                price="M",
+                localize=True,
+            )
+            .c.dropna()
+            .to_frame()
+        )
         df.rename(columns={"c": self.instrument}, inplace=True)
         df = df.resample(self.bar_length, label="right").last().dropna().iloc[:-1]
         self.raw_data = df.copy()
         self.last_bar = self.raw_data.index[-1]
-        print("Seconds: {}".format((pd.to_datetime(datetime.utcnow()) - self.last_bar).seconds))
+        print(
+            "Seconds: {}".format(
+                (pd.to_datetime(datetime.utcnow()) - self.last_bar).seconds
+            )
+        )
         if pd.to_datetime(datetime.utcnow()) - self.last_bar >= self.bar_length:
             self.get_most_recent()
         else:
@@ -94,19 +127,16 @@ class ForexTrader(tpqoa):
             print("~" * 50)
 
     def on_success(self, t_time, bid, ask):
-
         recent_tick = pd.to_datetime(t_time).replace(tzinfo=None)
 
         print(self.ticks, end="\r", flush=True)
 
-        # define stop
         if recent_tick >= self.end_time:
             self.terminate_session(cause="Scheduled Termination.")
             return
 
-        df = pd.DataFrame({self.instrument: (ask + bid) / 2},
-                          index=[recent_tick])
-        self.tick_data = pd.concat([self.tick_data, df])  # new with pd.concat()
+        df = pd.DataFrame({self.instrument: (ask + bid) / 2}, index=[recent_tick])
+        self.tick_data = pd.concat([self.tick_data, df])
 
         if self.ticks == 1 or recent_tick - self.last_bar > self.bar_length:
             self.resample_and_join()
@@ -114,8 +144,15 @@ class ForexTrader(tpqoa):
             self.execute_trades()
 
     def resample_and_join(self):
-        self.raw_data = pd.concat([self.raw_data, self.tick_data.resample(self.bar_length,
-                                                                          label="right").last().ffill().iloc[:-1]])
+        self.raw_data = pd.concat(
+            [
+                self.raw_data,
+                self.tick_data.resample(self.bar_length, label="right")
+                .last()
+                .ffill()
+                .iloc[:-1],
+            ]
+        )
         self.tick_data = self.tick_data.iloc[-1:]
         self.last_bar = self.raw_data.index[-1]
 
@@ -129,30 +166,42 @@ class ForexTrader(tpqoa):
     def execute_trades(self):
         if self.data["position"].iloc[-1] == 1:
             if self.position == 0:
-                order = self.create_order(self.instrument, self.units, suppress=True, ret=True)
+                order = self.create_order(
+                    self.instrument, self.units, suppress=True, ret=True
+                )
                 self.report_trade(order, "GOING LONG")
             elif self.position == -1:
-                order = self.create_order(self.instrument, self.units * 2, suppress=True, ret=True)
+                order = self.create_order(
+                    self.instrument, self.units * 2, suppress=True, ret=True
+                )
                 self.report_trade(order, "GOING LONG")
             else:
                 print("\nStaying long...")
             self.position = 1
         elif self.data["position"].iloc[-1] == -1:
             if self.position == 0:
-                order = self.create_order(self.instrument, -self.units, suppress=True, ret=True)
+                order = self.create_order(
+                    self.instrument, -self.units, suppress=True, ret=True
+                )
                 self.report_trade(order, "GOING SHORT")
             elif self.position == 1:
-                order = self.create_order(self.instrument, -self.units * 2, suppress=True, ret=True)
+                order = self.create_order(
+                    self.instrument, -self.units * 2, suppress=True, ret=True
+                )
                 self.report_trade(order, "GOING SHORT")
             else:
                 print("\nStaying short...")
             self.position = -1
         elif self.data["position"].iloc[-1] == 0:
             if self.position == -1:
-                order = self.create_order(self.instrument, self.units, suppress=True, ret=True)
+                order = self.create_order(
+                    self.instrument, self.units, suppress=True, ret=True
+                )
                 self.report_trade(order, "GOING NEUTRAL")
             elif self.position == 1:
-                order = self.create_order(self.instrument, -self.units, suppress=True, ret=True)
+                order = self.create_order(
+                    self.instrument, -self.units, suppress=True, ret=True
+                )
                 self.report_trade(order, "GOING NEUTRAL")
             else:
                 print("\nStaying neutral...")
@@ -167,5 +216,9 @@ class ForexTrader(tpqoa):
         cumpl = sum(self.profits)
         print("\n" + 50 * "~")
         print("{} | {}".format(time, going))
-        print("{} | units = {} | price = {} | P&L = {} | Cum P&L = {}".format(time, units, price, pl, cumpl))
+        print(
+            "{} | units = {} | price = {} | P&L = {} | Cum P&L = {}".format(
+                time, units, price, pl, cumpl
+            )
+        )
         print(50 * "~")

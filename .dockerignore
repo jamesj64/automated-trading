@@ -1,2 +1,8 @@
 #Ignore all Jupyter files
 *.ipynb
+
+#Ignore all in backtesting directory
+src/backtesting
+
+#Ignore all in __pycache__ directory
+**/__pycache__

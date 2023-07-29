@@ -2,9 +2,17 @@ import string
 import numpy as np
 from strategies import ForexTrader
 
-class Contrarian(ForexTrader.ForexTrader):
 
-    def __init__(self, conf_file: string, instrument: string, bar_length: string, units: int, duration: int, window=1):
+class Contrarian(ForexTrader.ForexTrader):
+    def __init__(
+        self,
+        conf_file: string,
+        instrument: string,
+        bar_length: string,
+        units: int,
+        duration: int,
+        window=1,
+    ):
         self.window = window
         super().__init__(conf_file, instrument, bar_length, units, duration)
 
