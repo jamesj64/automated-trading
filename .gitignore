@@ -1,0 +1,11 @@
+#Contains api secrets for Oanda
+oanda.cfg
+
+#virual environment
+.venv
+
+#vscode
+.vscode
+
+#git
+.git
