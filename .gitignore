@@ -12,3 +12,6 @@ oanda.cfg
 
 # All __pycache__ directories
 __pycache__/
+
+# Testing notebook
+src/testing.ipynb

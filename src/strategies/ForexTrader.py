@@ -121,6 +121,7 @@ class ForexTrader(tpqoa):
             )
         )
         if pd.to_datetime(datetime.utcnow()) - self.last_bar >= self.bar_length:
+            print("Ensure that this is running during trading hours...")
             self.get_most_recent()
         else:
             print("Successfully Merged!")
