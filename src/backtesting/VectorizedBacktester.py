@@ -33,9 +33,12 @@ class VectorizedBacktester:
 
     @classmethod
     def from_instrument(cls, instrument, tc):
-        return cls(
+        instance =  cls(
             instrument.get_ticker(), instrument.get_start(), instrument.get_end(), tc
         )
+        instance._instrument = instrument
+        instance._data = instance._instrument.get_data()
+        return instance
 
     def __repr__(self):
         return "VectorizedBacktester(symbol={}, start={}, end={})".format(

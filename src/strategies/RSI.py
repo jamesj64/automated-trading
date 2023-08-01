@@ -12,8 +12,8 @@ class RSI(ForexTrader.ForexTrader):
         units: int,
         duration: int,
         window=14,
-        buy_thresh=0.7,
-        short_thresh=0.3
+        buy_thresh=70,
+        short_thresh=30
     ):
         self.window = window
         self.buy_thresh=buy_thresh

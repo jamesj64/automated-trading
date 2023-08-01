@@ -1,14 +1,19 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import yfinance as yf
 
 
 class Instrument:
-    def __init__(self, ticker, start, end):
+    def __init__(self, ticker, start, end, source_file=None, start_time=None, end_time=None, granularity=None):
         self._ticker = ticker
         self._start = start
         self._end = end
         self._data = None
+        self.source_file = source_file
+        self.start_time=start_time
+        self.end_time=end_time
+        self.granularity=granularity
         self.get_data()
         self.log_returns()
 
@@ -41,8 +46,15 @@ class Instrument:
 
     # PROPERTIES END
     def get_data(self):
-        data = yf.download(self._ticker, self._start, self._end).Close.to_frame()
-        data.rename(columns={"Close": "price"}, inplace=True)
+        if self.source_file is None:
+            data = yf.download(self._ticker, self._start, self._end).Close.to_frame()
+            data.rename(columns={"Close": "price"}, inplace=True)
+        else:
+            data = pd.read_csv(self.source_file, parse_dates=["time"], index_col="time")
+            if self.start_time is not None and self.end_time is not None:
+                data = data.loc[(data.index.hour > self.start_time) & (data.index.hour < self.end_time)]
+            if self.granularity is not None:
+                data = data.resample(self.granularity, label="right").last().dropna().iloc[:-1]
         self._data = data
         return self._data.copy()
 

@@ -13,13 +13,19 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         tc: float,
         ema_s: int = 12,
         ema_l: int = 26,
-        ema_xl: int = 200,
-        signal_smooth: int = 9
+        sma_xl: int = 200,
+        signal_smooth: int = 9,
+        RSI_window=14,
+        buy_thresh=70,
+        short_thresh=30
     ):
         self.ema_s = ema_s
         self.ema_l = ema_l
-        self.ema_xl = ema_xl
+        self.sma_xl = sma_xl
         self.signal_smooth = signal_smooth
+        self.RSI_window = RSI_window
+        self.buy_thresh = buy_thresh
+        self.short_thresh = short_thresh
         super().__init__(symbol, start, end, tc)
 
     def test_strategy(self):
@@ -30,19 +36,42 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
         data["EMA_S"] = data.price.ewm(span=self.ema_s, adjust=False).mean()
         data["EMA_L"] = data.price.ewm(span=self.ema_l, adjust=False).mean()
-        data["EMA_XL"] = data.price.ewm(span=self.ema_xl, adjust=False).mean()
+        #data["EMA_XL"] = data.price.ewm(span=self.ema_xl, adjust=False).mean()
+
+        data["SMA_XL"] = data.price.rolling(self.sma_xl).mean()
 
         data["MACD"] = data.EMA_S - data.EMA_L
         data["signal"] = data.MACD.ewm(span=self.signal_smooth, adjust=False).mean()
 
         data["MACD_VOL"] = data.MACD - data.signal
 
-        data["MACD_MA"] = data.MACD_VOL.ewm(span=20, adjust=False).mean()
+        # data["MACD_MA"] = data.MACD_VOL.ewm(span=20, adjust=False).mean()
 
-        data["MACD_SIGNAL"] = np.sign(data.MACD - data.signal)
+        # data["MACD_SIGNAL"] = np.sign(data.MACD - data.signal)
 
-        data["position"] = np.where((data.MACD > data.signal) & ((data.MACD_MA - data.MACD_MA.shift(1) > 0)), 1, np.nan)
-        data["position"] = np.where((data.MACD < data.signal) & ((data.MACD_MA - data.MACD_MA.shift(1) < 0)), -1, data["position"])
+        # data["position"] = np.where((data.MACD > data.signal) & ((data.MACD_MA - data.MACD_MA.shift(1) > 0)), 1, np.nan)
+        # data["position"] = np.where((data.MACD < data.signal) & ((data.MACD_MA - data.MACD_MA.shift(1) < 0)), -1, data["position"])
+
+        #RSI CALCULATIONS
+
+        data["change"] = data.price.diff()
+        data["gain"] = data.change.mask(data.change < 0, 0.0)
+        data["loss"] = -data.change.mask(data.change > 0, -0.0)
+
+        data["avg_gain"] = data.gain.rolling(self.RSI_window).mean()
+        data["avg_loss"] = data.loss.rolling(self.RSI_window).mean()
+
+        data["rsi"] = 100 - (100 / (1 + (data.avg_gain / data.avg_loss)))
+
+        # SET POSITION 
+
+        
+
+        data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL) & (data.rsi > self.buy_thresh), 1, np.nan)
+        data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL) & (data.rsi < self.short_thresh), -1, data["position"])
+
+        #data["position"] = np.where((data.MACD > data.signal) & (data.rsi > self.buy_thresh), 1, np.nan)
+        #data["position"] = np.where((data.MACD < data.signal) & (data.rsi < self.short_thresh), -1, data["position"])
 
         data.position = data.position.ffill().fillna(0)
 
@@ -50,9 +79,9 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
         #data["position_changes"] = np.where((data.position != data.position.shift(1)) & (data.position.shift(1) != np.nan), 1, 0)
 
-        #df = data.loc[data.position != data.position.shift(1)].price.to_frame()
+        #data = data.loc[data.position != data.position.shift(1)].price.to_frame()
 
-        #print(np.sign(df - df.shift(1)).value_counts())
+        #print(np.sign(data - data.shift(1)).value_counts())
 
         data["hits"] = np.sign(data.log_returns) * np.sign(data.position)
 

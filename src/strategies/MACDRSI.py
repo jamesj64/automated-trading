@@ -15,8 +15,8 @@ class MACDRSI(ForexTrader.ForexTrader):
         EMA_L=26,
         signal_smooth=9,
         RSI_window=14,
-        buy_thresh=0.7,
-        short_thresh=0.3
+        buy_thresh=70,
+        short_thresh=30
     ):
         self.EMA_S = EMA_S
         self.EMA_L = EMA_L

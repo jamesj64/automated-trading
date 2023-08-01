@@ -1,5 +1,6 @@
 import string
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from util import Instrument
@@ -66,7 +67,6 @@ class IterativeBacktester:
     def get_data(self):
         """Gets data from instrument"""
         raw = self._instrument.get_data()
-
         raw["returns"] = np.log(raw.price / raw.price.shift(1))
         self.data = raw
 
