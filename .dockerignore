@@ -6,3 +6,6 @@ src/backtesting
 
 #Ignore all in __pycache__ directory
 **/__pycache__
+
+#Ignore all in data directory
+data
