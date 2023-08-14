@@ -5,7 +5,7 @@ import yfinance as yf
 
 
 class Instrument:
-    def __init__(self, ticker, start, end, source_file=None, start_time=None, end_time=None, granularity=None):
+    def __init__(self, ticker, start, end, source_file=None, start_time=None, end_time=None, granularity="1d"):
         self._ticker = ticker
         self._start = start
         self._end = end
@@ -47,7 +47,7 @@ class Instrument:
     # PROPERTIES END
     def get_data(self):
         if self.source_file is None:
-            data = yf.download(self._ticker, self._start, self._end).Close.to_frame()
+            data = yf.download(self._ticker, self._start, self._end, interval=self.granularity).Close.to_frame()
             data.rename(columns={"Close": "price"}, inplace=True)
         else:
             data = pd.read_csv(self.source_file, parse_dates=["time"], index_col="time")

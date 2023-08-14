@@ -12,7 +12,7 @@ plt.style.use("seaborn-v0_8")
 class VectorizedBacktester:
     """Class for the vectorized backtesting of trading strategies."""
 
-    def __init__(self, symbol: string, start: string, end: string, tc: float):
+    def __init__(self, symbol: string, start: string, end: string, tc: float, granularity: string="1d"):
         """
         Parameters
         ----------
@@ -28,7 +28,7 @@ class VectorizedBacktester:
         self.results_overview = None
         self.tc = tc
         self.results = None
-        self._instrument = Instrument(symbol, start, end)
+        self._instrument = Instrument(symbol, start, end, granularity=granularity)
         self._data = self._instrument.get_data()
 
     @classmethod
@@ -78,3 +78,10 @@ class VectorizedBacktester:
         else:
             title = "{} | TC = {}".format(self._instrument.get_ticker(), self.tc)
             self.results[["creturns", "cstrategy"]].plot(title=title, figsize=(12, 8))
+
+    def hit_ratio(self):
+        """Returns proporition of trades that are profitable"""
+        if self.results is not None and self.results.hits is not None:
+            value_count = self.results.hits.value_counts()
+            return value_count[1] / (value_count[0] + value_count[-1] + value_count[1])
+        return "No hit ratio avaliable. Test strategy before calling this method."

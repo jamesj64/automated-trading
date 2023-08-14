@@ -17,7 +17,8 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         signal_smooth: int = 9,
         RSI_window=14,
         buy_thresh=70,
-        short_thresh=30
+        short_thresh=30,
+        granularity="1d"
     ):
         self.ema_s = ema_s
         self.ema_l = ema_l
@@ -26,9 +27,11 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         self.RSI_window = RSI_window
         self.buy_thresh = buy_thresh
         self.short_thresh = short_thresh
-        super().__init__(symbol, start, end, tc)
+        super().__init__(symbol, start, end, tc, granularity=granularity)
 
     def test_strategy(self):
+
+        # MACD CALCULATIONS
 
         data = self._data.copy().dropna()
 
@@ -36,23 +39,12 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
         data["EMA_S"] = data.price.ewm(span=self.ema_s, adjust=False).mean()
         data["EMA_L"] = data.price.ewm(span=self.ema_l, adjust=False).mean()
-        #data["EMA_XL"] = data.price.ewm(span=self.ema_xl, adjust=False).mean()
-
-        data["SMA_XL"] = data.price.rolling(self.sma_xl).mean()
 
         data["MACD"] = data.EMA_S - data.EMA_L
         data["signal"] = data.MACD.ewm(span=self.signal_smooth, adjust=False).mean()
+        # data["MACD_VOL"] = data.MACD - data.signal
 
-        data["MACD_VOL"] = data.MACD - data.signal
-
-        # data["MACD_MA"] = data.MACD_VOL.ewm(span=20, adjust=False).mean()
-
-        # data["MACD_SIGNAL"] = np.sign(data.MACD - data.signal)
-
-        # data["position"] = np.where((data.MACD > data.signal) & ((data.MACD_MA - data.MACD_MA.shift(1) > 0)), 1, np.nan)
-        # data["position"] = np.where((data.MACD < data.signal) & ((data.MACD_MA - data.MACD_MA.shift(1) < 0)), -1, data["position"])
-
-        #RSI CALCULATIONS
+        # RSI CALCULATIONS
 
         data["change"] = data.price.diff()
         data["gain"] = data.change.mask(data.change < 0, 0.0)
@@ -63,9 +55,11 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
         data["rsi"] = 100 - (100 / (1 + (data.avg_gain / data.avg_loss)))
 
-        # SET POSITION 
+        # SMA CALCULATION
+        data["SMA_XL"] = data.price.rolling(self.sma_xl).mean()
 
-        
+
+        # SET POSITION 
 
         data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL) & (data.rsi > self.buy_thresh), 1, np.nan)
         data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL) & (data.rsi < self.short_thresh), -1, data["position"])
@@ -75,17 +69,13 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
         data.position = data.position.ffill().fillna(0)
 
+        data["strategy"] = data["position"].shift(1) * data["log_returns"]
+
         data["trades"] = data.position.diff().fillna(0).abs()
-
-        #data["position_changes"] = np.where((data.position != data.position.shift(1)) & (data.position.shift(1) != np.nan), 1, 0)
-
-        #data = data.loc[data.position != data.position.shift(1)].price.to_frame()
-
-        #print(np.sign(data - data.shift(1)).value_counts())
 
         data["hits"] = np.sign(data.log_returns) * np.sign(data.position)
 
-        data["strategy"] = data.position.shift(1) * data.log_returns - data.trades * self.tc
+        data["strategy"] = data.strategy - data.trades * self.tc
 
         data.dropna(inplace=True)
 
