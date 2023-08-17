@@ -2,6 +2,7 @@ import string
 import keras
 import pickle
 import numpy as np
+import pandas as pd
 from util import Calculations as calc
 from strategies.ForexTrader import ForexTrader
 
@@ -34,14 +35,14 @@ class DNN(ForexTrader):
     def define_strategy(self):
         df = self.raw_data.copy()
 
-        df = df.append(self.tick_data)
+        df = pd.concat([df, pd.DataFrame(self.tick_data)])
         df["returns"] = calc.returns(df[self.instrument])
         df["dir"] = calc.dir(df.returns)
         df["sma"] = calc.sma_crossover(df[self.instrument])
         df["mean_reversion"] = calc.mean_reversion(df[self.instrument])
         df["min"] = calc.min(df[self.instrument])
         df["max"] = calc.min(df[self.instrument])
-        df["mom"] = calc.mom(df.returns)
+        df["mom"] = calc.momentum(df.returns)
         df["vol"] = calc.volume(df.returns)
         df.dropna(inplace=True)
 
@@ -67,6 +68,8 @@ class DNN(ForexTrader):
         df_s = (df - self.mean) / self.std
 
         df["prob"] = self.model.predict(df_s[cols])
+
+        print(df.iloc[-1].prob)
 
         df = df.loc[self.start_time :].copy()
         df["position"] = np.where(df.prob < 0.47, -1, np.nan)
