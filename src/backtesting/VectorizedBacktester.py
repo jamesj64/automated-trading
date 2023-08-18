@@ -85,3 +85,21 @@ class VectorizedBacktester:
             value_count = self.results.hits.value_counts()
             return value_count[1] / (value_count[0] + value_count[-1] + value_count[1])
         return "No hit ratio avaliable. Test strategy before calling this method."
+    
+    def detailed_metrics(self):
+        """Returns detailed performance metrics"""
+        if self.results is not None:
+            # value_count = self.results.hits.value_counts()
+            # print("Hit Ratio: {}".format(value_count[1] / (value_count[0] + value_count[-1] + value_count[1])))
+            
+            mean_return = round(self.results.strategy.mean() * 252, 3)
+            risk = round(self.results.strategy.std() * np.sqrt(252), 3)
+            print("Annualized Return: {} | Annualized Risk: {}".format(mean_return, risk))
+
+            cagr = (self.results.cstrategy.iloc[-1] / self.results.cstrategy.iloc[0]) ** (365 / (self.results.index[-1] - self.results.index[0]).days) - 1
+            print("CAGR: {}".format(cagr))
+
+            sharpe = (cagr - 0.039) / risk
+            print("SHARPE: {}".format(sharpe))
+        else:
+            return "No data avaliable. Test strategy before calling detailed_metrics()"
