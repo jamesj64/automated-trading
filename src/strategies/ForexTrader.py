@@ -1,5 +1,6 @@
 import time
 import string
+import numpy as np
 import pandas as pd
 from tpqoa import tpqoa
 from datetime import datetime, timedelta
@@ -112,7 +113,11 @@ class ForexTrader(tpqoa):
             .to_frame()
         )
         df.rename(columns={"c": self.instrument}, inplace=True)
+        m_max = df.resample(self.bar_length, label="right").max().dropna()
+        m_min = df.resample(self.bar_length, label="right").min().dropna()
         df = df.resample(self.bar_length, label="right").last().dropna().iloc[:-1]
+        df["high"] = m_max
+        df["low"] = m_min
         self.raw_data = df.copy()
         self.last_bar = self.raw_data.index[-1]
         print(
@@ -130,7 +135,7 @@ class ForexTrader(tpqoa):
     def on_success(self, t_time, bid, ask):
         recent_tick = pd.to_datetime(t_time).replace(tzinfo=None)
 
-        print(self.ticks, end="\r", flush=True)
+        print("Ticks: {}".format(self.ticks), end="\r", flush=True)
 
         if recent_tick >= self.end_time:
             self.terminate_session(cause="Scheduled Termination.")
@@ -139,19 +144,19 @@ class ForexTrader(tpqoa):
         df = pd.DataFrame({self.instrument: (ask + bid) / 2}, index=[recent_tick])
         self.tick_data = pd.concat([self.tick_data, df])
 
-        if self.ticks == 1 or recent_tick - self.last_bar > self.bar_length:
+        if recent_tick - self.last_bar > self.bar_length:
             self.resample_and_join()
             self.define_strategy()
             self.execute_trades()
 
     def resample_and_join(self):
+        new_row = self.tick_data.resample(self.bar_length, label="right").last().ffill().iloc[:-1]
+        new_row["high"] = self.tick_data.resample(self.bar_length, label="right").max().ffill().iloc[:-1]
+        new_row["low"] = self.tick_data.resample(self.bar_length, label="right").min().ffill().iloc[:-1]
         self.raw_data = pd.concat(
             [
                 self.raw_data,
-                self.tick_data.resample(self.bar_length, label="right")
-                .last()
-                .ffill()
-                .iloc[:-1],
+                new_row
             ]
         )
         self.tick_data = self.tick_data.iloc[-1:]

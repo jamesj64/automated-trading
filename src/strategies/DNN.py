@@ -69,8 +69,6 @@ class DNN(ForexTrader):
 
         df["prob"] = self.model.predict(df_s[cols])
 
-        print(df.iloc[-1].prob)
-
         df = df.loc[self.start_time :].copy()
         df["position"] = np.where(df.prob < 0.47, -1, np.nan)
         df["position"] = np.where(df.prob > 0.53, 1, df.position)
