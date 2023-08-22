@@ -19,7 +19,7 @@ class IterativeBacktester:
         start: string,
         end: string,
         amount: int,
-        use_spread=True,
+        use_spread=False,
         source_file=None,
     ):
         """

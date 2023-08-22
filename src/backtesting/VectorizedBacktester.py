@@ -12,7 +12,7 @@ plt.style.use("seaborn-v0_8")
 class VectorizedBacktester:
     """Class for the vectorized backtesting of trading strategies."""
 
-    def __init__(self, symbol: string, start: string, end: string, tc: float, granularity: string="1d"):
+    def __init__(self, symbol: string, start: string, end: string, tc: float, granularity: string="1d", source_file=None):
         """
         Parameters
         ----------
@@ -24,17 +24,21 @@ class VectorizedBacktester:
             end date for data import
         tc: float
             proportional transaction/trading costs per trade
+        granularity: str
+            bar length (1d is default)
+        source_file: str
+            path to csv file to use instead of yf
         """
         self.results_overview = None
         self.tc = tc
         self.results = None
-        self._instrument = Instrument(symbol, start, end, granularity=granularity)
+        self._instrument = Instrument(symbol, start, end, source_file=source_file, granularity=granularity)
         self._data = self._instrument.get_data()
 
     @classmethod
     def from_instrument(cls, instrument, tc):
         instance =  cls(
-            instrument.get_ticker(), instrument.get_start(), instrument.get_end(), tc
+            symbol=instrument.get_ticker(), start=instrument.get_start(), end=instrument.get_end(), tc=tc, granularity=instrument.granularity, source_file=instrument.source_file
         )
         instance._instrument = instrument
         instance._data = instance._instrument.get_data()

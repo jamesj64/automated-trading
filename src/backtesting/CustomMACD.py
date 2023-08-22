@@ -18,7 +18,8 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         RSI_window=14,
         buy_thresh=70,
         short_thresh=30,
-        granularity="1d"
+        granularity="1d",
+        source_file=None
     ):
         self.ema_s = ema_s
         self.ema_l = ema_l
@@ -27,7 +28,7 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         self.RSI_window = RSI_window
         self.buy_thresh = buy_thresh
         self.short_thresh = short_thresh
-        super().__init__(symbol, start, end, tc, granularity=granularity)
+        super().__init__(symbol, start, end, tc, granularity=granularity, source_file=source_file)
 
     def test_strategy(self):
 
@@ -42,7 +43,7 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
         data["MACD"] = data.EMA_S - data.EMA_L
         data["signal"] = data.MACD.ewm(span=self.signal_smooth, adjust=False).mean()
-        # data["MACD_VOL"] = data.MACD - data.signal
+        data["MACD_VOL"] = data.MACD - data.signal
 
         # RSI CALCULATIONS
 
@@ -60,6 +61,9 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
 
 
         # SET POSITION 
+
+        #data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL), 1, np.nan)
+        #data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL), -1, data["position"])
 
         data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL) & (data.rsi > self.buy_thresh), 1, np.nan)
         data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL) & (data.rsi < self.short_thresh), -1, data["position"])
