@@ -13,6 +13,7 @@ class DNN(VectorizedBacktester):
         end: string,
         tc: float,
         granularity="1d",
+        source_file=None,
         model: string = None,
         pkl: string = None,
         lags=5,
@@ -21,7 +22,7 @@ class DNN(VectorizedBacktester):
         self.pkl = pkl
         self.lags = lags
         self.load_model(model, pkl)
-        super().__init__(symbol, start, end, tc, granularity=granularity)
+        super().__init__(symbol, start, end, tc, granularity=granularity, source_file=source_file)
 
     def load_model(self, model_path: string, pkl_path: string):
         self.model = keras.models.load_model(model_path)

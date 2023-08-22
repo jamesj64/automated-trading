@@ -12,7 +12,7 @@ plt.style.use("seaborn-v0_8")
 class VectorizedBacktester:
     """Class for the vectorized backtesting of trading strategies."""
 
-    def __init__(self, symbol: string, start: string, end: string, tc: float, granularity: string="1d", source_file=None):
+    def __init__(self, symbol: string, start: string, end: string, tc: float, granularity: string="1d", source_file=None, trading_hour_range=(0, 23)):
         """
         Parameters
         ----------
@@ -28,7 +28,10 @@ class VectorizedBacktester:
             bar length (1d is default)
         source_file: str
             path to csv file to use instead of yf
+        trading_hour_range: (int, int)
+            range of hours to include (in New York time) in trading. 
         """
+        self.trading_hour_range = trading_hour_range
         self.results_overview = None
         self.tc = tc
         self.results = None
@@ -54,10 +57,14 @@ class VectorizedBacktester:
     def test_strategy(self):
         """Backtests the simple Contrarian trading strategy. This should be overridden as it is strategy-specific."""
 
+        (ts, te) = self.trading_hour_range
+
         data = self._data.copy().dropna()
         data["log_returns"] = np.log(data.price / data.price.shift(1))
         data["position"] = np.sign(data["log_returns"].rolling(1).mean()).mul(-1)
+        data["position"] = np.where((data.index.hour > ts) & (data.index.hour < te), data.position, 0)
         data["strategy"] = data["position"].shift(1) * data["log_returns"]
+
         data.dropna(inplace=True)
 
         # determine the number of trades in each bar

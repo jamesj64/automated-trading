@@ -56,6 +56,7 @@ class Instrument:
             if self.granularity is not None:
                 data = data.resample(self.granularity, label="right").last().dropna().iloc[:-1]
         self._data = data
+        self._data.index = self._data.index.tz_localize("UTC").tz_convert("America/New_York")
         return self._data.copy()
 
     def log_returns(self):
