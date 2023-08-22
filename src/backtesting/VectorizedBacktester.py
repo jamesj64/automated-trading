@@ -62,7 +62,7 @@ class VectorizedBacktester:
         data = self._data.copy().dropna()
         data["log_returns"] = np.log(data.price / data.price.shift(1))
         data["position"] = np.sign(data["log_returns"].rolling(1).mean()).mul(-1)
-        data["position"] = np.where((data.index.hour > ts) & (data.index.hour < te), data.position, 0)
+        data["position"] = np.where((data.index.hour >= ts) & (data.index.hour <= te), data.position, 0)
         data["strategy"] = data["position"].shift(1) * data["log_returns"]
 
         data.dropna(inplace=True)
