@@ -61,7 +61,7 @@ class VectorizedBacktester:
 
         data = self._data.copy().dropna()
         data["log_returns"] = np.log(data.price / data.price.shift(1))
-        data["position"] = np.sign(data["log_returns"].rolling(1).mean()).mul(-1)
+        data["position"] = 1
         data["position"] = np.where((data.index.hour >= ts) & (data.index.hour <= te), data.position, 0)
         data["strategy"] = data["position"].shift(1) * data["log_returns"]
 
@@ -100,8 +100,8 @@ class VectorizedBacktester:
     def detailed_metrics(self):
         """Returns detailed performance metrics"""
         if self.results is not None:
-            # value_count = self.results.hits.value_counts()
-            # print("Hit Ratio: {}".format(value_count[1] / (value_count[0] + value_count[-1] + value_count[1])))
+            #value_count = self.results.hits.value_counts()
+            #print("Hit Ratio: {}".format(value_count[1] / (value_count[0] + value_count[-1] + value_count[1])))
             
             mean_return = round(self.results.strategy.mean() * 252, 3)
             risk = round(self.results.strategy.std() * np.sqrt(252), 3)

@@ -14,6 +14,7 @@ class ForexTrader(tpqoa):
         bar_length: string,
         units: int,
         duration: int,
+        trading_hours: int * int = (0, 23),
     ):
         super().__init__(conf_file)
         self.instrument = instrument
@@ -27,6 +28,8 @@ class ForexTrader(tpqoa):
         self.profits = []
         self.start_time = datetime.utcnow()
         self.end_time = self.start_time + timedelta(minutes=duration)
+
+        self.trading_hours = trading_hours
 
         self.start_trading()
 
@@ -64,6 +67,9 @@ class ForexTrader(tpqoa):
                         time.sleep(wait)
                         wait += wait_increase
                         self.tick_data = pd.DataFrame()
+
+    def set_trading_hours(self, trading_hours: int * int):
+        self.trading_hours = trading_hours
 
     def terminate_session(self, cause: string):
         self.stop_stream = True
@@ -144,21 +150,41 @@ class ForexTrader(tpqoa):
         df = pd.DataFrame({self.instrument: (ask + bid) / 2}, index=[recent_tick])
         self.tick_data = pd.concat([self.tick_data, df])
 
-        if recent_tick - self.last_bar > self.bar_length:
+        (ts, te) = self.trading_hours
+
+        curHour = (
+            datetime.utcnow().tz_localize("UTC").tz_convert("America/New_York").hour
+        )
+
+        if (
+            recent_tick - self.last_bar > self.bar_length
+            and curHour >= ts
+            and curHour <= te
+        ):
             self.resample_and_join()
             self.define_strategy()
             self.execute_trades()
 
     def resample_and_join(self):
-        new_row = self.tick_data.resample(self.bar_length, label="right").last().ffill().iloc[:-1]
-        new_row["high"] = self.tick_data.resample(self.bar_length, label="right").max().ffill().iloc[:-1]
-        new_row["low"] = self.tick_data.resample(self.bar_length, label="right").min().ffill().iloc[:-1]
-        self.raw_data = pd.concat(
-            [
-                self.raw_data,
-                new_row
-            ]
+        new_row = (
+            self.tick_data.resample(self.bar_length, label="right")
+            .last()
+            .ffill()
+            .iloc[:-1]
         )
+        new_row["high"] = (
+            self.tick_data.resample(self.bar_length, label="right")
+            .max()
+            .ffill()
+            .iloc[:-1]
+        )
+        new_row["low"] = (
+            self.tick_data.resample(self.bar_length, label="right")
+            .min()
+            .ffill()
+            .iloc[:-1]
+        )
+        self.raw_data = pd.concat([self.raw_data, new_row])
         self.tick_data = self.tick_data.iloc[-1:]
         self.last_bar = self.raw_data.index[-1]
 

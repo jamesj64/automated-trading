@@ -19,7 +19,8 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         buy_thresh=70,
         short_thresh=30,
         granularity="1d",
-        source_file=None
+        source_file=None,
+        trading_hour_range=(0, 23)
     ):
         self.ema_s = ema_s
         self.ema_l = ema_l
@@ -28,13 +29,16 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         self.RSI_window = RSI_window
         self.buy_thresh = buy_thresh
         self.short_thresh = short_thresh
+        self.trading_hour_range=trading_hour_range
         super().__init__(symbol, start, end, tc, granularity=granularity, source_file=source_file)
 
     def test_strategy(self):
 
-        # MACD CALCULATIONS
+        (ts, te) = self.trading_hour_range
 
         data = self._data.copy().dropna()
+
+        # MACD CALCULATIONS
 
         data["log_returns"] = np.log(data.price / data.price.shift(1))
 
@@ -65,11 +69,13 @@ class CustomMACD(VectorizedBacktester.VectorizedBacktester):
         #data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL), 1, np.nan)
         #data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL), -1, data["position"])
 
-        data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL) & (data.rsi > self.buy_thresh), 1, np.nan)
-        data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL) & (data.rsi < self.short_thresh), -1, data["position"])
+        #data["position"] = np.where((data.MACD > data.signal) & (data.price > data.SMA_XL) & (data.rsi > self.buy_thresh), 1, np.nan)
+        #data["position"] = np.where((data.MACD < data.signal) & (data.price < data.SMA_XL) & (data.rsi < self.short_thresh), -1, data["position"])
 
-        #data["position"] = np.where((data.MACD > data.signal) & (data.rsi > self.buy_thresh), 1, np.nan)
-        #data["position"] = np.where((data.MACD < data.signal) & (data.rsi < self.short_thresh), -1, data["position"])
+        data["position"] = np.where((data.MACD > data.signal) & (data.rsi > self.buy_thresh), 1, np.nan)
+        data["position"] = np.where((data.MACD < data.signal) & (data.rsi < self.short_thresh), -1, data["position"])
+
+        data["position"] = np.where((data.index.hour >= ts) & (data.index.hour <= te), data.position, np.nan)
 
         data.position = data.position.ffill().fillna(0)
 
