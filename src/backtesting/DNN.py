@@ -74,6 +74,11 @@ class DNN(VectorizedBacktester):
 
         df["position"] = np.where(df.s_prob < 0.498, -1, np.nan)
         df["position"] = np.where(df.s_prob > 0.51, 1, df.position)
+        
+        (ts, te) = self.trading_hour_range
+
+        df["position"] = np.where((df.index.hour >= ts) & (df.index.hour <= te), df.position, np.nan)
+        
         df["position"] = df.position.ffill().fillna(0)
 
         df["strategy"] = df["position"].shift(1) * df["returns"]
